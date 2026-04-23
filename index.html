@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🙏 Jai Guru Ji — Salary Sheet</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f0ee;color:#222;font-size:14px}
+:root{--maroon:#5C1A1A;--gold:#C9A84C}
+.header{background:var(--maroon);color:#fff;padding:12px 16px;position:sticky;top:0;z-index:100}
+.header h1{font-size:17px;font-weight:600}
+.header p{font-size:11px;color:var(--gold);margin-top:2px}
+.nav{display:flex;gap:6px;margin-top:10px}
+.nav button{flex:1;padding:7px 0;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:rgba(255,255,255,0.12);color:#fff;transition:all 0.2s}
+.nav button.active{background:var(--gold);color:var(--maroon)}
+.page{display:none;padding:12px;max-width:500px;margin:0 auto}
+.page.active{display:block}
+.card{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
+.card-title{font-weight:600;font-size:13px;color:var(--maroon);margin-bottom:12px}
+.info-box{background:#FFF9ED;border:1px solid var(--gold);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--maroon);margin-bottom:12px;line-height:1.8}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.form-grid.one{grid-template-columns:1fr}
+label{font-size:11px;color:#666;display:block;margin-bottom:3px}
+input,select{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#222}
+input[readonly]{background:#f5f5f5;color:#999}
+input:focus,select:focus{outline:2px solid var(--gold);border-color:var(--gold)}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+.btn{padding:10px 0;width:100%;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600}
+.btn-primary{background:var(--maroon);color:#fff}
+.btn-sm{padding:5px 10px;width:auto;font-size:11px;border-radius:6px;border:1px solid #e5e5e5;background:#f5f5f5;cursor:pointer}
+.btn-danger{background:#fef2f2;color:#dc2626;border:1px solid #fca5a5}
+.emp-item{border-radius:10px;padding:10px 12px;margin-bottom:6px;border:1px solid #eee;background:#fafafa;display:flex;align-items:center;justify-content:space-between}
+.emp-item.im{border-left:4px solid var(--gold);background:#FFFDF5}
+.emp-item.gen{border-left:4px solid #ddd}
+.emp-name{font-weight:600;font-size:13px}
+.emp-meta{font-size:11px;color:#888;margin-top:2px}
+.badge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:600;margin-left:5px}
+.badge-im{background:#FFF3CD;color:#856404}
+.badge-fixed{background:#f0f0f0;color:#666}
+.badge-daily{background:#E6F1FB;color:#185FA5}
+.sal-card{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
+.sal-card.im{border-left:4px solid var(--gold)}
+.sal-card.gen{border-left:4px solid #ddd}
+.sal-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.sal-name{font-weight:600;font-size:14px}
+.sal-desig{font-size:11px;color:#888;margin-top:2px}
+.sal-net{text-align:right}
+.sal-net-val{font-size:17px;font-weight:700;color:var(--maroon)}
+.sal-net-label{font-size:10px;color:#aaa}
+.input-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.input-box{text-align:center}
+.input-box label{font-size:9px;color:#888;margin-bottom:3px}
+.inp-yellow{width:100%;text-align:center;padding:6px 2px;border:1px solid #f59e0b;border-radius:7px;font-size:13px;font-weight:600;background:#fffbeb}
+.inp-red{width:100%;text-align:center;padding:6px 2px;border:1px solid #fca5a5;border-radius:7px;font-size:13px;font-weight:600;background:#fef2f2}
+.breakdown{background:#f9f9f9;border-radius:8px;padding:8px 10px}
+.breakdown-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;text-align:center}
+.breakdown-label{color:#aaa;font-size:9px}
+.breakdown-val{font-weight:600;font-size:12px}
+.dedn-row{margin-top:6px;padding-top:6px;border-top:1px solid #eee;display:flex;gap:12px;justify-content:center;color:#dc2626;font-size:11px}
+.month-total{background:var(--maroon);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;color:#fff;margin-top:4px}
+.month-total-label{font-size:11px;color:var(--gold)}
+.month-total-val{font-size:16px;font-weight:700}
+.other-dedn-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.other-dedn-row label{font-size:11px;color:#888;white-space:nowrap;margin:0}
+.other-dedn-row input{width:80px;text-align:center;padding:4px 6px;border:1px solid #ddd;border-radius:7px;font-size:12px}
+.month-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:13px}
+.month-row:last-child{border-bottom:none}
+.month-name{color:#444}
+.month-name.cur{color:var(--maroon);font-weight:600}
+.month-amt{color:var(--maroon);font-weight:500}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.stat-box{background:#f5f5f5;border-radius:8px;padding:12px;text-align:center}
+.stat-val{font-size:20px;font-weight:700;color:var(--maroon)}
+.stat-label{font-size:11px;color:#888;margin-top:2px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--maroon);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;z-index:999;display:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.2)}
+.loading{text-align:center;padding:30px;color:#aaa;font-size:13px}
+.month-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.month-bar select{padding:6px 10px;border-radius:8px;border:1px solid #ddd;font-size:13px}
+.month-bar button{padding:6px 12px;border-radius:8px;border:1px solid #ddd;background:#f5f5f5;font-size:12px;cursor:pointer}
+.month-bar .hint{font-size:10px;color:#aaa;width:100%;margin-top:2px}
+.setup-box{background:#fff3cd;border:1px solid var(--gold);border-radius:12px;padding:16px;margin:12px;font-size:13px;line-height:2}
+.setup-box h3{color:var(--maroon);margin-bottom:8px}
+.setup-box code{background:#eee;padding:2px 6px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+
+<!-- Config check -->
+<div id="setup-needed" style="display:none">
+  <div class="setup-box">
+    <h3>⚙️ Setup Required</h3>
+    Supabase keys abhi set nahi hain.<br>
+    <b>Vercel Dashboard</b> mein jaao:<br>
+    Settings → Environment Variables mein daalo:<br><br>
+    <code>VITE_SUPABASE_URL</code> = apka Supabase URL<br>
+    <code>VITE_SUPABASE_KEY</code> = apki anon key<br><br>
+    Phir redeploy karo.
+  </div>
+</div>
+
+<div id="main-app" style="display:none">
+  <div class="header">
+    <h1>🙏 Jai Guru Ji</h1>
+    <p>Salary Sheet</p>
+    <div class="nav">
+      <button class="active" onclick="showTab('emp',this)">Employees</button>
+      <button onclick="showTab('sal',this)">Salary</button>
+      <button onclick="showTab('sum',this)">Summary</button>
+    </div>
+  </div>
+
+  <!-- EMPLOYEES -->
+  <div id="tab-emp" class="page active">
+    <div class="info-box">
+      <b>Naam daalo</b> → ID apne aap banega &nbsp;|&nbsp;
+      <b>1.5x</b> = IM Machine &nbsp;|&nbsp; Data cloud mein save hoga
+    </div>
+    <div class="card">
+      <div class="card-title">Naya Employee Add Karo</div>
+      <div class="form-grid">
+        <div><label>Naam *</label><input id="f-name" placeholder="Uday Kumar" oninput="autoId()"></div>
+        <div><label>ID (auto)</label><input id="f-id" readonly placeholder="SPI-001"></div>
+      </div>
+      <div class="form-grid">
+        <div><label>Designation</label>
+          <select id="f-desig">
+            <option>Operator</option><option>Supervisor</option>
+            <option>Packing Staff</option><option>Loading Staff</option>
+            <option>Accounts</option><option>Admin</option>
+          </select>
+        </div>
+        <div><label>Machine Type</label>
+          <select id="f-mach">
+            <option value="Normal">Normal (Regular)</option>
+            <option value="1.5x">1.5x Machine (IM)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div><label>Salary Type</label>
+          <select id="f-stype" onchange="toggleSal()">
+            <option value="fixed">Fixed Monthly</option>
+            <option value="daily">Daily Wages</option>
+          </select>
+        </div>
+        <div id="fixed-wrap"><label>Monthly Salary (₹)</label><input id="f-fixed" type="number" placeholder="18000"></div>
+        <div id="daily-wrap" style="display:none"><label>Daily Rate (₹)</label><input id="f-daily" type="number" placeholder="650"></div>
+      </div>
+      <button class="btn btn-primary" onclick="addEmp()" style="margin-top:6px" id="add-btn">+ Add Karo</button>
+    </div>
+    <div class="card">
+      <div class="card-title" id="emp-title">Employee List</div>
+      <div id="emp-list"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- SALARY -->
+  <div id="tab-sal" class="page">
+    <div class="card" style="padding:10px 14px">
+      <div class="month-bar">
+        <select id="sel-month" onchange="loadSalary()">
+          <option value="0">January</option><option value="1">February</option>
+          <option value="2">March</option><option value="3">April</option>
+          <option value="4">May</option><option value="5">June</option>
+          <option value="6">July</option><option value="7">August</option>
+          <option value="8">September</option><option value="9">October</option>
+          <option value="10">November</option><option value="11">December</option>
+        </select>
+        <span style="font-size:13px;color:#888">2026</span>
+        <button onclick="exportCSV()">CSV Export</button>
+        <div class="hint">Saturday = holiday | Sat aaya → double milega | Yellow = editable | Red = advance</div>
+      </div>
+      <div id="sal-info" style="font-size:11px;color:#888"></div>
+    </div>
+    <div id="sal-list"><div class="loading">Loading...</div></div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div id="tab-sum" class="page">
+    <div class="card">
+      <div class="card-title">Annual Overview 2026</div>
+      <div class="stat-grid" id="sum-stats"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Month-wise Payroll</div>
+      <div id="sum-months"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Employee List</div>
+      <div id="sum-emps"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ───────────────────────────────────────────────────────────────────
+// Vercel environment variables — automatically set hoti hain
+const SUPA_URL = window.__SUPA_URL__ || '';
+const SUPA_KEY = window.__SUPA_KEY__ || '';
+
+const MONTHS = ['January','February','March','April','May','June',
+  'July','August','September','October','November','December'];
+
+let sb, emps = [], salCache = {};
+
+function getSats(y, m) {
+  let c = 0, d = new Date(y, m, 1);
+  while (d.getMonth() === m) { if (d.getDay() === 6) c++; d.setDate(d.getDate()+1); }
+  return c;
+}
+function getDays(y, m) { return new Date(y, m+1, 0).getDate(); }
+function workDays(y, m) { return getDays(y, m) - getSats(y, m); }
+
+function calcSal(emp, ed, wd) {
+  const isIM = emp.machine === '1.5x';
+  const eff  = emp.saltype === 'daily' ? emp.daily : emp.fixed / wd;
+  const base = Math.round((isIM ? eff*1.5 : eff) * ed.days);
+  const satB = Math.round(eff * ed.sat * 2);
+  const otA  = isIM ? Math.round((eff/12)*ed.ot*1.5) : Math.round((eff/12)*ed.ot);
+  const gross = base + satB + otA;
+  const adv  = ed.advance || 0;
+  const od   = ed.other_dedn || 0;
+  return { base, satB, otA, gross, adv, od, net: gross - adv - od };
+}
+
+function fmt(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  // Get config from meta tags injected by Vercel (set via env vars in index.html replacement)
+  const url = document.querySelector('meta[name=supa-url]')?.content || '';
+  const key = document.querySelector('meta[name=supa-key]')?.content || '';
+
+  if (!url || !key || url.includes('YOUR_')) {
+    document.getElementById('setup-needed').style.display = 'block';
+    return;
+  }
+
+  sb = supabase.createClient(url, key);
+  document.getElementById('main-app').style.display = 'block';
+
+  const now = new Date();
+  document.getElementById('sel-month').value = now.getMonth();
+  await loadEmps();
+});
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+function showTab(t, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  btn.classList.add('active');
+  if (t === 'sal') loadSalary();
+  if (t === 'sum') loadSummary();
+}
+
+// ── EMPLOYEES ────────────────────────────────────────────────────────────────
+function autoId() {
+  const next = emps.length + 1;
+  document.getElementById('f-id').value = 'SPI-' + String(next).padStart(3,'0');
+}
+function toggleSal() {
+  const t = document.getElementById('f-stype').value;
+  document.getElementById('fixed-wrap').style.display = t === 'fixed' ? '' : 'none';
+  document.getElementById('daily-wrap').style.display = t === 'daily' ? '' : 'none';
+}
+
+async function loadEmps() {
+  const { data } = await sb.from('employees').select('*').order('id');
+  emps = data || [];
+  renderEmps();
+}
+
+function renderEmps() {
+  document.getElementById('emp-title').textContent = `Employee List (${emps.length})`;
+  const el = document.getElementById('emp-list');
+  if (!emps.length) {
+    el.innerHTML = '<div class="loading">Koi employee nahi. Upar se add karo.</div>';
+    autoId(); return;
+  }
+  el.innerHTML = emps.map((e,i) => `
+    <div class="emp-item ${e.machine==='1.5x'?'im':'gen'}">
+      <div>
+        <div class="emp-name">${e.name}
+          <span class="badge ${e.machine==='1.5x'?'badge-im':e.saltype==='daily'?'badge-daily':'badge-fixed'}">
+            ${e.machine==='1.5x'?'1.5x':e.saltype==='daily'?'Daily':'Fixed'}
+          </span>
+        </div>
+        <div class="emp-meta">${e.id} · ${e.desig} · ${e.saltype==='daily'?'₹'+e.daily+'/day':'₹'+Number(e.fixed).toLocaleString('en-IN')+'/mo'}</div>
+      </div>
+      <button class="btn-sm btn-danger" onclick="delEmp('${e.id}')">Delete</button>
+    </div>`).join('');
+  autoId();
+}
+
+async function addEmp() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { showToast('Naam daalo!'); return; }
+  const stype = document.getElementById('f-stype').value;
+  const fixed = parseFloat(document.getElementById('f-fixed').value) || 0;
+  const daily = parseFloat(document.getElementById('f-daily').value) || 0;
+  if (stype==='fixed' && !fixed) { showToast('Monthly salary daalo!'); return; }
+  if (stype==='daily' && !daily) { showToast('Daily rate daalo!'); return; }
+  const id = document.getElementById('f-id').value || 'SPI-'+String(emps.length+1).padStart(3,'0');
+  document.getElementById('add-btn').textContent = 'Adding...';
+  const { error } = await sb.from('employees').insert({
+    id, name,
+    desig: document.getElementById('f-desig').value,
+    machine: document.getElementById('f-mach').value,
+    saltype: stype, fixed, daily
+  });
+  document.getElementById('add-btn').textContent = '+ Add Karo';
+  if (error) { showToast('Error: '+error.message); return; }
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-fixed').value = '';
+  document.getElementById('f-daily').value = '';
+  await loadEmps();
+  showToast(name+' add ho gaya!');
+}
+
+async function delEmp(id) {
+  if (!confirm('Delete karein?')) return;
+  await sb.from('employees').delete().eq('id', id);
+  await loadEmps();
+  showToast('Delete ho gaya.');
+}
+
+// ── SALARY ───────────────────────────────────────────────────────────────────
+async function loadSalary() {
+  const m = parseInt(document.getElementById('sel-month').value);
+  const y = 2026;
+  const wd = workDays(y, m);
+  const sats = getSats(y, m);
+  document.getElementById('sal-info').textContent =
+    `Working days: ${wd} | Saturdays (holiday): ${sats}`;
+
+  const { data } = await sb.from('salary_data').select('*').eq('year',y).eq('month',m);
+  salCache = {};
+  (data||[]).forEach(r => salCache[r.emp_id] = r);
+  renderSalary(m, y, wd, sats);
+}
+
+function renderSalary(m, y, wd, sats) {
+  const el = document.getElementById('sal-list');
+  if (!emps.length) {
+    el.innerHTML = '<div class="loading">Pehle employees add karo.</div>'; return;
+  }
+  let totalNet = 0, totalGross = 0;
+  el.innerHTML = emps.map(e => {
+    const ed = salCache[e.id] || { days: wd, sat: 0, ot: 0, advance: 0, other_dedn: 0 };
+    const { base, satB, otA, gross, adv, od, net } = calcSal(e, ed, wd);
+    totalNet += net; totalGross += gross;
+    const isIM = e.machine === '1.5x';
+    return `
+    <div class="sal-card ${isIM?'im':'gen'}">
+      <div class="sal-header">
+        <div>
+          <div class="sal-name">${e.name}
+            <span class="badge ${isIM?'badge-im':'badge-fixed'}">${isIM?'1.5x':'Normal'}</span>
+          </div>
+          <div class="sal-desig">${e.desig} · ${e.id}</div>
+        </div>
+        <div class="sal-net">
+          <div class="sal-net-val">${fmt(net)}</div>
+          <div class="sal-net-label">Net Salary</div>
+        </div>
+      </div>
+      <div class="input-grid">
+        <div class="input-box">
+          <label>Days Kaam</label>
+          <input class="inp-yellow" type="number" min="0" max="${wd}" value="${ed.days}"
+            onchange="updSal('${e.id}','days',this.value,${m},${y},${wd})">
+        </div>
+        <div class="input-box">
+          <label>Sat Aaya?</label>
+          <input class="inp-yellow" type="number" min="0" max="${sats}" value="${ed.sat}"
+            onchange="updSal('${e.id}','sat',this.value,${m},${y},${wd})">
+        </div>
+        <div class="input-box">
+          <label>OT Hrs</label>
+          <input class="inp-yellow" type="number" min="0" value="${ed.ot}"
+            onchange="updSal('${e.id}','ot',this.value,${m},${y},${wd})">
+        </div>
+        <div class="input-box">
+          <label>Advance ₹</label>
+          <input class="inp-red" type="number" min="0" value="${adv}"
+            onchange="updSal('${e.id}','advance',this.value,${m},${y},${wd})">
+        </div>
+      </div>
+      <div class="other-dedn-row">
+        <label>Other Deduction (₹)</label>
+        <input type="number" min="0" value="${od}"
+          onchange="updSal('${e.id}','other_dedn',this.value,${m},${y},${wd})">
+      </div>
+      <div class="breakdown">
+        <div class="breakdown-grid">
+          <div><div class="breakdown-label">Base</div><div class="breakdown-val">${fmt(base)}</div></div>
+          <div><div class="breakdown-label">Sat Bonus</div><div class="breakdown-val">${satB>0?fmt(satB):'—'}</div></div>
+          <div><div class="breakdown-label">OT</div><div class="breakdown-val">${otA>0?fmt(otA):'—'}</div></div>
+          <div><div class="breakdown-label">Gross</div><div class="breakdown-val">${fmt(gross)}</div></div>
+        </div>
+        ${(adv>0||od>0)?`<div class="dedn-row">${adv>0?`<span>Advance: -${fmt(adv)}</span>`:''} ${od>0?`<span>Other: -${fmt(od)}</span>`:''}</div>`:''}
+      </div>
+    </div>`;
+  }).join('') + `
+  <div class="month-total">
+    <div><div class="month-total-label">Total Gross</div><div class="month-total-val">${fmt(totalGross)}</div></div>
+    <div style="text-align:right"><div class="month-total-label">Net Payable</div><div class="month-total-val">${fmt(totalNet)}</div></div>
+  </div>`;
+}
+
+async function updSal(empId, field, val, m, y, wd) {
+  const existing = salCache[empId] || { emp_id: empId, year: y, month: m, days: wd, sat: 0, ot: 0, advance: 0, other_dedn: 0 };
+  const updated = { ...existing, emp_id: empId, year: y, month: m, [field]: parseFloat(val)||0 };
+  salCache[empId] = updated;
+  await sb.from('salary_data').upsert(updated, { onConflict: 'emp_id,year,month' });
+  const sats = getSats(y, m);
+  renderSalary(m, y, wd, sats);
+}
+
+function exportCSV() {
+  const m = parseInt(document.getElementById('sel-month').value);
+  const y = 2026, wd = workDays(y, m);
+  let csv = 'Emp ID,Name,Designation,Machine,Days,Sat,OT Hrs,Base,Sat Bonus,OT Amt,Gross,Advance,Other Dedn,Net\n';
+  emps.forEach(e => {
+    const ed = salCache[e.id] || { days:wd, sat:0, ot:0, advance:0, other_dedn:0 };
+    const { base, satB, otA, gross, adv, od, net } = calcSal(e, ed, wd);
+    csv += `${e.id},"${e.name}",${e.desig},${e.machine},${ed.days},${ed.sat},${ed.ot},${base},${satB},${otA},${gross},${adv},${od},${net}\n`;
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = `JaiGuruJi_${MONTHS[m]}_${y}.csv`;
+  a.click();
+}
+
+// ── SUMMARY ──────────────────────────────────────────────────────────────────
+async function loadSummary() {
+  const y = 2026;
+  const { data } = await sb.from('salary_data').select('*').eq('year', y);
+  const allSal = {};
+  (data||[]).forEach(r => {
+    if (!allSal[r.month]) allSal[r.month] = {};
+    allSal[r.month][r.emp_id] = r;
+  });
+
+  let grand = 0;
+  const monthTotals = [];
+  const empTotals = {};
+  emps.forEach(e => empTotals[e.id] = 0);
+
+  for (let m = 0; m < 12; m++) {
+    const wd = workDays(y, m);
+    let mt = 0;
+    emps.forEach(e => {
+      const ed = (allSal[m]||{})[e.id] || { days:wd, sat:0, ot:0, advance:0, other_dedn:0 };
+      const { net } = calcSal(e, ed, wd);
+      empTotals[e.id] = (empTotals[e.id]||0) + net;
+      mt += net;
+    });
+    monthTotals.push(mt);
+    grand += mt;
+  }
+
+  const curM = new Date().getMonth();
+  document.getElementById('sum-stats').innerHTML = `
+    <div class="stat-box"><div class="stat-val">${fmt(grand)}</div><div class="stat-label">Annual Payroll 2026</div></div>
+    <div class="stat-box"><div class="stat-val">${fmt(Math.round(grand/12))}</div><div class="stat-label">Monthly Average</div></div>
+    <div class="stat-box"><div class="stat-val">${emps.length}</div><div class="stat-label">Total Employees</div></div>
+    <div class="stat-box"><div class="stat-val">${fmt(emps.length?Math.round(grand/12/(emps.length||1)):0)}</div><div class="stat-label">Avg/Employee</div></div>`;
+
+  document.getElementById('sum-months').innerHTML = MONTHS.map((mn,i) => `
+    <div class="month-row">
+      <span class="month-name ${i===curM?'cur':''}">${mn} ${y}</span>
+      <span class="month-amt">${monthTotals[i]>0?fmt(monthTotals[i]):'—'}</span>
+    </div>`).join('');
+
+  document.getElementById('sum-emps').innerHTML = emps.length
+    ? emps.map(e => `
+      <div class="month-row">
+        <div><div style="font-weight:600">${e.name}</div>
+        <div style="font-size:11px;color:#888">${e.desig} · ${e.machine==='1.5x'?'1.5x Machine':'Normal'}</div></div>
+        <span class="month-amt">${fmt(empTotals[e.id]||0)}</span>
+      </div>`).join('')
+    : '<div class="loading">Koi employee nahi.</div>';
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 2500);
+}
+</script>
+</body>
+</html>
