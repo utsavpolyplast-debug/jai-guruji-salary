@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --maroon: #5C1A1A;
+  --gold:   #C9A84C;
+}
+
+body {
+  background: #f5f0ee;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+.input-yellow {
+  @apply w-14 text-center text-xs border border-amber-400 bg-amber-50 rounded-md py-1 focus:outline-none focus:ring-1 focus:ring-amber-500;
+}
+.input-red {
+  @apply w-16 text-center text-xs border border-red-400 bg-red-50 rounded-md py-1 focus:outline-none focus:ring-1 focus:ring-red-400;
+}
