@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🙏 Jai Guru Ji — Salary Sheet</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f0ee;color:#222;font-size:14px;padding-bottom:20px}
+:root{--m:#5C1A1A;--g:#C9A84C;--p:#e8f5e9;--a:#ffebee;--h:#e3f2fd;--x:#fff8e1;--o:#fce4ec}
+.hdr{background:var(--m);color:#fff;padding:12px 16px;position:sticky;top:0;z-index:100}
+.hdr h1{font-size:16px;font-weight:700;letter-spacing:.3px}
+.hdr p{font-size:10px;color:var(--g);margin-top:1px}
+.nav{display:flex;gap:5px;margin-top:9px}
+.nav button{flex:1;padding:6px 0;border-radius:7px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:rgba(255,255,255,0.13);color:#fff}
+.nav button.active{background:var(--g);color:var(--m)}
+.page{display:none;padding:10px;max-width:520px;margin:0 auto}
+.page.active{display:block}
+.card{background:#fff;border-radius:12px;padding:13px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
+.ctitle{font-weight:700;font-size:12px;color:var(--m);margin-bottom:10px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px}
+.fg.one{grid-template-columns:1fr}
+label{font-size:10px;color:#666;display:block;margin-bottom:2px}
+input,select{width:100%;padding:7px 9px;border:1px solid #ddd;border-radius:7px;font-size:12px;background:#fff;color:#222}
+input[readonly]{background:#f5f5f5;color:#999}
+input:focus,select:focus{outline:2px solid var(--g);border-color:var(--g)}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+.btn{padding:9px 0;width:100%;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:700}
+.btn-p{background:var(--m);color:#fff}
+.btn-g{background:var(--g);color:var(--m)}
+.btn-sm{padding:4px 9px;width:auto;font-size:10px;border-radius:6px;border:1px solid #ddd;background:#f5f5f5;cursor:pointer;font-weight:600}
+.btn-dl{background:#1a5c1a;color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:11px;cursor:pointer;font-weight:600}
+.emp-item{border-radius:9px;padding:9px 11px;margin-bottom:5px;border:1px solid #eee;display:flex;align-items:center;justify-content:space-between}
+.emp-item.im{border-left:4px solid var(--g);background:#FFFDF5}
+.emp-item.gen{border-left:4px solid #ddd;background:#fafafa}
+.ename{font-weight:700;font-size:12px}
+.emeta{font-size:10px;color:#888;margin-top:1px}
+.bdg{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;margin-left:4px}
+.bdg-im{background:#FFF3CD;color:#856404}
+.bdg-fix{background:#f0f0f0;color:#666}
+.bdg-day{background:#E6F1FB;color:#185FA5}
+
+/* ATTENDANCE */
+.att-controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.att-controls select{width:auto;padding:5px 8px;font-size:12px}
+.att-controls input[type=date]{width:auto;padding:5px 8px;font-size:12px}
+.att-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.att-table{width:100%;border-collapse:collapse;font-size:11px;min-width:420px}
+.att-table th{background:var(--m);color:#fff;padding:6px 5px;text-align:center;font-weight:600;white-space:nowrap;position:sticky;top:0}
+.att-table th:first-child{text-align:left;min-width:110px;position:sticky;left:0;z-index:2;background:var(--m)}
+.att-table td{padding:5px 4px;border-bottom:1px solid #f0f0f0;text-align:center;vertical-align:middle}
+.att-table td:first-child{text-align:left;font-weight:600;font-size:11px;position:sticky;left:0;background:#fff;z-index:1;white-space:nowrap}
+.att-table tr.im-r td:first-child{background:#FFFDF5}
+.att-table tr:nth-child(even) td:first-child{background:#fafafa}
+.att-table tr.im-r:nth-child(even) td:first-child{background:#FFF9ED}
+.att-btn{width:32px;height:28px;border-radius:5px;border:1px solid #ddd;cursor:pointer;font-size:10px;font-weight:700;background:#f5f5f5;color:#666;transition:all .15s}
+.att-btn:hover{transform:scale(1.1)}
+.att-btn.P{background:#c8e6c9;color:#2e7d32;border-color:#81c784}
+.att-btn.A{background:#ffcdd2;color:#c62828;border-color:#e57373}
+.att-btn.H{background:#bbdefb;color:#1565c0;border-color:#64b5f6}
+.att-btn.X{background:#fff9c4;color:#f57f17;border-color:#ffd54f}
+.att-btn.OT{background:#fce4ec;color:#880e4f;border-color:#f48fb1;font-size:9px}
+.att-btn.HD{background:#e1bee7;color:#4a148c;border-color:#ce93d8;font-size:9px}
+.shift-row{display:flex;gap:3px;flex-direction:column;align-items:center}
+.shift-lbl{font-size:8px;color:#aaa}
+.ot-inp{width:30px;padding:2px;border:1px solid #ddd;border-radius:4px;font-size:10px;text-align:center;background:#fce4ec}
+
+/* SALARY */
+.sal-card{background:#fff;border-radius:11px;padding:13px;margin-bottom:9px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
+.sal-card.im{border-left:4px solid var(--g)}
+.sal-card.gen{border-left:4px solid #ddd}
+.sal-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:9px}
+.sal-net-val{font-size:16px;font-weight:700;color:var(--m)}
+.sal-net-lbl{font-size:9px;color:#aaa;text-align:right}
+.breakdown{background:#f9f9f9;border-radius:7px;padding:7px 9px;font-size:11px}
+.bk-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;text-align:center}
+.bk-lbl{color:#aaa;font-size:8px}
+.bk-val{font-weight:600;font-size:11px}
+.adv-row{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+.adv-row label{font-size:10px;color:#888;white-space:nowrap;margin:0}
+.adv-inp{width:80px;text-align:center;padding:4px 5px;border:1px solid #fca5a5;border-radius:6px;font-size:11px;background:#fef2f2}
+.month-tot{background:var(--m);border-radius:11px;padding:11px 14px;display:flex;justify-content:space-between;color:#fff;margin-top:4px}
+.mt-lbl{font-size:10px;color:var(--g)}
+.mt-val{font-size:15px;font-weight:700}
+
+/* SUMMARY */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
+.stat-box{background:#f5f5f5;border-radius:8px;padding:11px;text-align:center}
+.stat-val{font-size:18px;font-weight:700;color:var(--m)}
+.stat-lbl{font-size:10px;color:#888;margin-top:2px}
+.mrow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:12px}
+.mrow:last-child{border-bottom:none}
+.mrow.cur span:first-child{color:var(--m);font-weight:700}
+
+.legend{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;font-size:10px}
+.leg-item{display:flex;align-items:center;gap:3px}
+.leg-dot{width:16px;height:16px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--m);color:#fff;padding:9px 18px;border-radius:9px;font-size:12px;z-index:999;display:none;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,0.22)}
+.loading{text-align:center;padding:28px;color:#aaa;font-size:12px}
+.info-box{background:#FFF9ED;border:1px solid var(--g);border-radius:9px;padding:9px 12px;font-size:11px;color:var(--m);margin-bottom:10px;line-height:1.8}
+</style>
+</head>
+<body>
+
+<div id="setup-msg" style="display:none;padding:20px">
+  <div style="background:#fff3cd;border:1px solid #C9A84C;border-radius:12px;padding:16px;font-size:13px;line-height:2">
+    <b>⚙️ Setup Required</b><br>
+    Supabase keys set nahi hain.<br>
+    Vercel → Settings → Environment Variables:<br>
+    <code>SUPABASE_URL</code> aur <code>SUPABASE_KEY</code> daalo
+  </div>
+</div>
+
+<div id="app" style="display:none">
+<div class="hdr">
+  <h1>🙏 Jai Guru Ji</h1>
+  <p>Salary &amp; Attendance Sheet</p>
+  <div class="nav">
+    <button class="active" onclick="showTab('emp',this)">Employees</button>
+    <button onclick="showTab('att',this)">Attendance</button>
+    <button onclick="showTab('sal',this)">Salary</button>
+    <button onclick="showTab('sum',this)">Summary</button>
+  </div>
+</div>
+
+<!-- ── EMPLOYEES ── -->
+<div id="tab-emp" class="page active">
+  <div class="info-box"><b>Naam daalo</b> → ID auto banega &nbsp;|&nbsp; <b>1.5x</b> = IM Machine</div>
+  <div class="card">
+    <div class="ctitle">Naya Employee</div>
+    <div class="fg">
+      <div><label>Naam *</label><input id="fn" placeholder="Uday Kumar" oninput="autoId()"></div>
+      <div><label>ID (auto)</label><input id="fid" readonly placeholder="SPI-001"></div>
+    </div>
+    <div class="fg">
+      <div><label>Designation</label>
+        <select id="fd">
+          <option>Operator</option><option>Supervisor</option>
+          <option>Packing Staff</option><option>Loading Staff</option>
+          <option>Accounts</option><option>Admin</option>
+        </select>
+      </div>
+      <div><label>Machine Type</label>
+        <select id="fm">
+          <option value="Normal">Normal (Regular)</option>
+          <option value="1.5x">1.5x Machine (IM)</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg">
+      <div><label>Salary Type</label>
+        <select id="fs" onchange="toggleSal()">
+          <option value="fixed">Fixed Monthly</option>
+          <option value="daily">Daily Wages</option>
+        </select>
+      </div>
+      <div id="fw"><label>Monthly (₹)</label><input id="ff" type="number" placeholder="18000"></div>
+      <div id="dw" style="display:none"><label>Daily Rate (₹)</label><input id="fd2" type="number" placeholder="650"></div>
+    </div>
+    <button class="btn btn-p" onclick="addEmp()" style="margin-top:6px" id="addbtn">+ Add Karo</button>
+  </div>
+  <div class="card">
+    <div class="ctitle" id="emptitle">Employee List</div>
+    <div id="emplist"><div class="loading">Loading...</div></div>
+  </div>
+</div>
+
+<!-- ── ATTENDANCE ── -->
+<div id="tab-att" class="page">
+  <div class="card" style="padding:10px 12px">
+    <div class="att-controls">
+      <select id="att-month" onchange="loadAtt()">
+        <option value="0">January</option><option value="1">February</option>
+        <option value="2">March</option><option value="3">April</option>
+        <option value="4">May</option><option value="5">June</option>
+        <option value="6">July</option><option value="7">August</option>
+        <option value="8">September</option><option value="9">October</option>
+        <option value="10">November</option><option value="11">December</option>
+      </select>
+      <span style="font-size:12px;color:#888;font-weight:600">2026</span>
+      <select id="att-shift" onchange="loadAtt()">
+        <option value="day">Day Shift</option>
+        <option value="night">Night Shift</option>
+      </select>
+      <button class="btn-dl" onclick="exportAttExcel()">Excel Download</button>
+    </div>
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot att-btn P">P</div> Present</div>
+      <div class="leg-item"><div class="leg-dot att-btn A">A</div> Absent</div>
+      <div class="leg-item"><div class="leg-dot att-btn H">H</div> Holiday</div>
+      <div class="leg-item"><div class="leg-dot att-btn X">1.5</div> 1.5x Machine</div>
+      <div class="leg-item"><div class="leg-dot att-btn HD" style="background:#c8b6e2;color:#4a148c;border-color:#9c27b0;font-size:8px">HD</div> Holiday Present (2x)</div>
+      <div class="leg-item" style="color:#888;font-size:10px">P/HD/1.5x ke neeche OT hrs daalo</div>
+      <div class="leg-item" style="color:#aaa">Sat = auto Holiday</div>
+    </div>
+    <div style="font-size:10px;color:#aaa">Kisi bhi button pe click karo → status change hoga</div>
+  </div>
+  <div class="att-table-wrap">
+    <table class="att-table" id="att-tbl">
+      <thead><tr id="att-head"></tr></thead>
+      <tbody id="att-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── SALARY ── -->
+<div id="tab-sal" class="page">
+  <div class="card" style="padding:10px 12px">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select id="sal-month" onchange="loadSal()">
+        <option value="0">January</option><option value="1">February</option>
+        <option value="2">March</option><option value="3">April</option>
+        <option value="4">May</option><option value="5">June</option>
+        <option value="6">July</option><option value="7">August</option>
+        <option value="8">September</option><option value="9">October</option>
+        <option value="10">November</option><option value="11">December</option>
+      </select>
+      <span style="font-size:12px;color:#888;font-weight:600">2026</span>
+      <button class="btn-dl" onclick="exportSalExcel()">Excel Download</button>
+    </div>
+    <div style="font-size:10px;color:#aaa;margin-top:5px">Attendance se auto calculate hoga &nbsp;|&nbsp; Advance manually daalo</div>
+  </div>
+  <div id="sallist"><div class="loading">Loading...</div></div>
+</div>
+
+<!-- ── SUMMARY ── -->
+<div id="tab-sum" class="page">
+  <div class="card">
+    <div class="ctitle">Annual Overview 2026</div>
+    <div class="stat-grid" id="sum-stats"></div>
+  </div>
+  <div class="card">
+    <div class="ctitle">Month-wise Payroll</div>
+    <div id="sum-months"></div>
+  </div>
+  <div class="card">
+    <div class="ctitle">Employee-wise</div>
+    <div id="sum-emps"></div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+let sb, emps=[], attCache={}, advCache={};
+
+function getSats(y,m){let c=0,d=new Date(y,m,1);while(d.getMonth()===m){if(d.getDay()===6)c++;d.setDate(d.getDate()+1);}return c;}
+function getDays(y,m){return new Date(y,m+1,0).getDate();}
+function isSat(y,m,d){return new Date(y,m,d).getDay()===6;}
+function fmt(n){return '₹'+Math.round(n).toLocaleString('en-IN');}
+function dateStr(y,m,d){return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
+
+// Status cycle: '' -> P -> A -> H -> HD -> 1.5X -> ''
+// HD = Holiday Present = double pay
+const CYCLE={''  :'P','P':'A','A':'H','H':'HD','HD':'X','X':''};
+const SLBL={'P':'P','A':'A','H':'H','HD':'HD','X':'1.5',''  :''};
+const SCLS={'P':'P','A':'A','H':'H','HD':'HD','X':'X',''  :''};
+
+function calcEmpSal(emp, m, y, shift){
+  const days = getDays(y,m);
+  const eff  = emp.saltype==='daily' ? emp.daily : emp.fixed / 30;
+  const isIM = emp.machine==='1.5x';
+
+  // Step 1: collect daily status
+  const status = {}; // day -> status string
+  let lastWorkDay = 0; // last day employee worked (to handle left-early)
+
+  for(let d=1; d<=days; d++){
+    const rec = attCache[`${emp.id}|${dateStr(y,m,d)}|${shift}`];
+    const s = rec ? rec.status : '';
+    status[d] = s;
+    if(s==='P'||s==='HD'||s==='X') lastWorkDay = d;
+  }
+
+  // Step 2: process each week (Sun to Sat)
+  let present=0, hdCount=0, halfCount=0, otHours=0;
+  let satDoubleCount=0, satSingleCount=0, satPaidCount=0;
+
+  for(let d=1; d<=days; d++){
+    if(!isSat(y,m,d)) continue;
+
+    // Find Sun to Fri of this week
+    let weekAbsent=0, weekPresent=0, weekWorked=false;
+    for(let wd=d-6; wd<=d-1; wd++){
+      if(wd<1||wd>days) continue;
+      const dow = new Date(y,m,wd).getDay();
+      if(dow===0) continue; // skip Sunday (it's not a work obligation day)
+      const s = status[wd]||'';
+      if(s==='P'||s==='HD'||s==='X') weekPresent++;
+      else weekAbsent++; // A or unmarked = absent
+      if(s) weekWorked=true;
+    }
+
+    // If employee left before this Saturday's week = skip
+    if(lastWorkDay < d-6) continue;
+
+    const satRec = attCache[`${emp.id}|${dateStr(y,m,d)}|${shift}`];
+    const satStatus = satRec ? satRec.status : '';
+    const satCame = satStatus==='P'||satStatus==='X'||satStatus==='HD';
+
+    if(satCame){
+      // Employee came on Saturday
+      otHours += parseFloat(satRec.ot_hours||0);
+      if(weekAbsent===0){
+        satDoubleCount++; // Perfect week = Double pay
+      } else {
+        satSingleCount++; // Had absent = Single pay
+      }
+    } else {
+      // Employee did not come on Saturday
+      if(weekAbsent>=2){
+        // 2+ absents in week = No Saturday pay
+      } else {
+        // 0 or 1 absent = Saturday is paid holiday
+        satPaidCount++;
+      }
+    }
+  }
+
+  // Step 3: count normal working days (Mon-Fri + Sun)
+  for(let d=1; d<=days; d++){
+    if(isSat(y,m,d)) continue;
+    const rec = attCache[`${emp.id}|${dateStr(y,m,d)}|${shift}`];
+    if(!rec) continue;
+    const s = rec.status;
+    if(s==='P'){present++; otHours+=parseFloat(rec.ot_hours||0);}
+    else if(s==='HD'){hdCount++; otHours+=parseFloat(rec.ot_hours||0);}
+    else if(s==='X'){halfCount++; otHours+=parseFloat(rec.ot_hours||0);}
+  }
+
+  const base         = isIM ? Math.round(eff*1.5*present) : Math.round(eff*present);
+  const hdPay        = Math.round(eff*hdCount*2);
+  const halfPay      = Math.round(eff*1.5*halfCount);
+  const satDoublePay = Math.round(eff*satDoubleCount*2);
+  const satSinglePay = Math.round(eff*satSingleCount*1);
+  const satPaidPay   = Math.round(eff*satPaidCount*1);
+  const satBonus     = satDoublePay + satSinglePay + satPaidPay;
+  const satCount     = satDoubleCount + satSingleCount + satPaidCount;
+  const otAmt        = Math.round((eff/12)*otHours);
+  const gross        = base + hdPay + halfPay + satBonus + otAmt;
+  const adv          = advCache[`${emp.id}|${y}|${m}`] || 0;
+  return {present, hdCount, halfCount, satCount, satDoubleCount, satSingleCount, satPaidCount,
+          otHours, base, hdPay, halfPay, satDoublePay, satSinglePay, satPaidPay,
+          satBonus, otAmt, gross, adv, net: gross-adv};
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async()=>{
+  const url=document.querySelector('meta[name="supa-url"]')?.content||'';
+  const key=document.querySelector('meta[name="supa-key"]')?.content||'';
+  if(!url||!key||url.length<10||key.length<10){
+    document.getElementById('setup-msg').style.display='block';return;
+  }
+  sb=supabase.createClient(url,key);
+  document.getElementById('app').style.display='block';
+  const now=new Date();
+  document.getElementById('att-month').value=now.getMonth();
+  document.getElementById('sal-month').value=now.getMonth();
+  await loadEmps();
+});
+
+function showTab(t,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  btn.classList.add('active');
+  if(t==='att')loadAtt();
+  if(t==='sal')loadSal();
+  if(t==='sum')loadSum();
+}
+
+// ── EMPLOYEES ────────────────────────────────────────────────────────────────
+function autoId(){const n=emps.length+1;document.getElementById('fid').value='SPI-'+String(n).padStart(3,'0');}
+function toggleSal(){const t=document.getElementById('fs').value;document.getElementById('fw').style.display=t==='fixed'?'':'none';document.getElementById('dw').style.display=t==='daily'?'':'none';}
+
+async function loadEmps(){
+  const {data}=await sb.from('employees').select('*').order('id');
+  emps=data||[];renderEmps();
+}
+function renderEmps(){
+  document.getElementById('emptitle').textContent=`Employee List (${emps.length})`;
+  const el=document.getElementById('emplist');
+  if(!emps.length){el.innerHTML='<div class="loading">Koi employee nahi.</div>';autoId();return;}
+  el.innerHTML=emps.map((e,i)=>`
+    <div class="emp-item ${e.machine==='1.5x'?'im':'gen'}">
+      <div>
+        <div class="ename">${e.name}<span class="bdg ${e.machine==='1.5x'?'bdg-im':e.saltype==='daily'?'bdg-day':'bdg-fix'}">${e.machine==='1.5x'?'1.5x':e.saltype==='daily'?'Daily':'Fixed'}</span></div>
+        <div class="emeta">${e.id} · ${e.desig} · ${e.saltype==='daily'?'₹'+e.daily+'/day':'₹'+Number(e.fixed).toLocaleString('en-IN')+'/mo'}</div>
+      </div>
+      <button class="btn-sm" style="background:#fef2f2;color:#dc2626;border-color:#fca5a5" onclick="delEmp('${e.id}')">Delete</button>
+    </div>`).join('');
+  autoId();
+}
+async function addEmp(){
+  const name=document.getElementById('fn').value.trim();
+  if(!name){showToast('Naam daalo!');return;}
+  const stype=document.getElementById('fs').value;
+  const fixed=parseFloat(document.getElementById('ff').value)||0;
+  const daily=parseFloat(document.getElementById('fd2').value)||0;
+  if(stype==='fixed'&&!fixed){showToast('Monthly salary daalo!');return;}
+  if(stype==='daily'&&!daily){showToast('Daily rate daalo!');return;}
+  const id=document.getElementById('fid').value||'SPI-'+String(emps.length+1).padStart(3,'0');
+  document.getElementById('addbtn').textContent='Adding...';
+  const {error}=await sb.from('employees').insert({id,name,desig:document.getElementById('fd').value,machine:document.getElementById('fm').value,saltype:stype,fixed,daily});
+  document.getElementById('addbtn').textContent='+ Add Karo';
+  if(error){showToast('Error: '+error.message);return;}
+  document.getElementById('fn').value='';document.getElementById('ff').value='';document.getElementById('fd2').value='';
+  await loadEmps();showToast(name+' add ho gaya!');
+}
+async function delEmp(id){
+  if(!confirm('Delete karein?'))return;
+  await sb.from('employees').delete().eq('id',id);
+  await loadEmps();showToast('Delete ho gaya.');
+}
+
+// ── ATTENDANCE ───────────────────────────────────────────────────────────────
+async function loadAtt(){
+  const m=parseInt(document.getElementById('att-month').value);
+  const y=2026, shift=document.getElementById('att-shift').value;
+  const start=dateStr(y,m,1), end=dateStr(y,m,getDays(y,m));
+  const {data}=await sb.from('attendance').select('*').gte('att_date',start).lte('att_date',end).eq('shift',shift);
+  attCache={};
+  (data||[]).forEach(r=>{attCache[`${r.emp_id}|${r.att_date}|${r.shift}`]=r;});
+  renderAtt(m,y,shift);
+}
+
+function renderAtt(m,y,shift){
+  const days=getDays(y,m);
+  const head=document.getElementById('att-head');
+  const body=document.getElementById('att-body');
+
+  // Header — dates
+  let hhtml='<th>Employee</th>';
+  for(let d=1;d<=days;d++){
+    const sat=isSat(y,m,d);
+    const day=['S','M','T','W','T','F','S'][new Date(y,m,d).getDay()];
+    hhtml+=`<th style="${sat?'background:#8B3030;':''}">${d}<br><span style="font-size:8px;opacity:.7">${day}</span></th>`;
+  }
+  head.innerHTML=hhtml;
+
+  // Rows
+  body.innerHTML=emps.map(e=>{
+    let row=`<tr class="${e.machine==='1.5x'?'im-r':''}"><td>${e.name}<br><span style="font-size:9px;color:#aaa">${e.desig}</span></td>`;
+    for(let d=1;d<=days;d++){
+      const ds=dateStr(y,m,d);
+      const sat=isSat(y,m,d);
+      const key=`${e.id}|${ds}|${shift}`;
+      const rec=attCache[key];
+      let status=rec?rec.status:'';
+      if(sat&&!status) status='H';
+      const cls=SCLS[status]||'';
+      const lbl=SLBL[status]||'·';
+      const oth=rec?parseFloat(rec.ot_hours||0):0;
+      // P or X = show status button + OT hours input below
+      if(status==='P'||status==='X'||status==='HD'){
+        row+=`<td style="padding:2px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <button class="att-btn ${cls}" onclick="cycleAtt('${e.id}','${ds}','${shift}','${status}')">${lbl}</button>
+            <input class="ot-inp" type="number" min="0" max="24" step="0.5" value="${oth||''}" placeholder="OT" onchange="saveOT('${e.id}','${ds}','${shift}',this.value)" title="OT hours">
+          </div>
+        </td>`;
+      } else {
+        row+=`<td><button class="att-btn ${cls}" onclick="cycleAtt('${e.id}','${ds}','${shift}','${status}')" ${sat&&!rec?'style="opacity:.5"':''}>${lbl||'·'}</button></td>`;
+      }
+    }
+    row+='</tr>';
+    return row;
+  }).join('');
+}
+
+async function cycleAtt(empId, date, shift, currentStatus){
+  const sat=new Date(date).getDay()===6;
+  let next=CYCLE[currentStatus]||'P';
+  // Saturday pe sirf H aur P allow karo
+  if(sat&&next==='A') next='H';
+  if(sat&&next==='X') next='';
+
+  const key=`${empId}|${date}|${shift}`;
+  if(!next){
+    delete attCache[key];
+    await sb.from('attendance').delete().eq('emp_id',empId).eq('att_date',date).eq('shift',shift);
+  } else {
+    const existing=attCache[key]||{};
+    const rec={emp_id:empId, att_date:date, shift, status:next, ot_hours:existing.ot_hours||0};
+    attCache[key]=rec;
+    await sb.from('attendance').upsert(rec,{onConflict:'emp_id,att_date,shift'});
+  }
+  const m=parseInt(document.getElementById('att-month').value);
+  renderAtt(m,2026,shift);
+}
+
+async function saveOT(empId,date,shift,hours){
+  const key=`${empId}|${date}|${shift}`;
+  const rec=attCache[key]||{emp_id:empId,att_date:date,shift,status:'OT',ot_hours:0};
+  rec.ot_hours=parseFloat(hours)||0;
+  attCache[key]=rec;
+  await sb.from('attendance').upsert(rec,{onConflict:'emp_id,att_date,shift'});
+}
+
+// ── SALARY ───────────────────────────────────────────────────────────────────
+async function loadSal(){
+  const m=parseInt(document.getElementById('sal-month').value);
+  const y=2026;
+  // Load attendance for both shifts
+  const start=dateStr(y,m,1), end=dateStr(y,m,getDays(y,m));
+  const {data:attData}=await sb.from('attendance').select('*').gte('att_date',start).lte('att_date',end);
+  attCache={};
+  (attData||[]).forEach(r=>{attCache[`${r.emp_id}|${r.att_date}|${r.shift}`]=r;});
+  // Load advances for this month
+  const {data:advData}=await sb.from('advances').select('*').gte('adv_date',start).lte('adv_date',end).order('created_at');
+  advCache={};advListCache={};
+  (advData||[]).forEach(r=>{
+    const k=`${r.emp_id}|${y}|${m}`;
+    advCache[k]=(advCache[k]||0)+r.amount;
+    if(!advListCache[r.emp_id]) advListCache[r.emp_id]=[];
+    advListCache[r.emp_id].push(r);
+  });
+  renderSal(m,y);
+}
+
+function renderSal(m,y){
+  const el=document.getElementById('sallist');
+  if(!emps.length){el.innerHTML='<div class="loading">Pehle employees add karo.</div>';return;}
+  let totGross=0,totNet=0;
+  el.innerHTML=emps.map(e=>{
+    // Combine day + night shift
+    const dayS=calcEmpSal(e,m,y,'day');
+    const nightS=calcEmpSal(e,m,y,'night');
+    const present=dayS.present+nightS.present;
+    const hdCount=dayS.hdCount+nightS.hdCount;
+    const half=dayS.halfCount+nightS.halfCount;
+    const otH=dayS.otHours+nightS.otHours;
+    const base=dayS.base+nightS.base;
+    const hdPay=dayS.hdPay+nightS.hdPay;
+    const halfPay=dayS.halfPay+nightS.halfPay;
+    const satB=dayS.satBonus+nightS.satBonus;
+    const satDoubleCount=dayS.satDoubleCount+nightS.satDoubleCount;
+    const satSingleCount=dayS.satSingleCount+nightS.satSingleCount;
+    const satPaidCount=dayS.satPaidCount+nightS.satPaidCount;
+    const otA=dayS.otAmt+nightS.otAmt;
+    const gross=dayS.gross+nightS.gross;
+    const adv=advCache[`${e.id}|${y}|${m}`]||0;
+    const net=gross-adv;
+    totGross+=gross;totNet+=net;
+    const isIM=e.machine==='1.5x';
+    return `<div class="sal-card ${isIM?'im':'gen'}">
+      <div class="sal-hdr">
+        <div>
+          <div style="font-weight:700;font-size:13px">${e.name} <span class="bdg ${isIM?'bdg-im':'bdg-fix'}">${isIM?'1.5x':'Normal'}</span></div>
+          <div style="font-size:10px;color:#888;margin-top:2px">${e.desig} · Present: ${present} · Sat2x: ${satDoubleCount} · Sat1x: ${satSingleCount+satPaidCount} · OT: ${otH}hrs</div>
+        </div>
+        <div class="sal-net-lbl">
+          <div class="sal-net-val">${fmt(net)}</div>
+          <div>Net Salary</div>
+        </div>
+      </div>
+      <div style="margin-bottom:8px">
+        <div style="font-size:10px;color:#888;margin-bottom:4px;font-weight:600">Advance Entries (is mahine)</div>
+        <div id="adv-list-${e.id}">
+          ${(advListCache['${e.id}']||[]).map((a,ai)=>`
+            <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+              <input class="adv-inp" type="number" min="0" value="${a.amount}" style="width:80px"
+                onchange="updateAdv('${e.id}',${ai},this.value,${m},${y})">
+              <input type="text" placeholder="Note" value="${a.note||''}" style="flex:1;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:10px"
+                onchange="updateAdvNote('${e.id}',${ai},this.value,${m},${y})">
+              <button onclick="deleteAdv('${e.id}',${ai},${m},${y})" style="padding:3px 7px;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;border-radius:5px;font-size:10px;cursor:pointer">X</button>
+            </div>`).join('')}
+        </div>
+        <button onclick="addAdv('${e.id}',${m},${y})" style="font-size:10px;padding:4px 10px;background:#fff3cd;color:#856404;border:1px solid #ffd54f;border-radius:6px;cursor:pointer;margin-top:2px">+ Advance Add Karo</button>
+        ${adv>0?`<span style="margin-left:8px;font-size:11px;color:#dc2626;font-weight:600">Total: -${fmt(adv)}</span>`:''}
+      </div>
+      <div class="breakdown">
+        <div class="bk-grid">
+          <div><div class="bk-lbl">Base</div><div class="bk-val">${fmt(base)}</div></div>
+          <div><div class="bk-lbl">HD Pay</div><div class="bk-val">${hdCount>0?fmt(hdPay):'—'}</div></div>
+          <div><div class="bk-lbl">Sat Pay</div><div class="bk-val">${satB>0?fmt(satB):'—'}</div></div>
+          <div><div class="bk-lbl">OT</div><div class="bk-val">${otH>0?fmt(otA):'—'}</div></div>
+          <div><div class="bk-lbl">Gross</div><div class="bk-val">${fmt(gross)}</div></div>
+        </div>
+        ${adv>0?`<div style="margin-top:5px;padding-top:5px;border-top:1px solid #eee;text-align:center;color:#dc2626;font-size:10px;font-weight:600">Total Advance: -${fmt(adv)} | Net: ${fmt(net)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('')+`
+  <div class="month-tot">
+    <div><div class="mt-lbl">Total Gross</div><div class="mt-val">${fmt(totGross)}</div></div>
+    <div style="text-align:right"><div class="mt-lbl">Net Payable</div><div class="mt-val">${fmt(totNet)}</div></div>
+  </div>`;
+}
+
+// advListCache stores array of advance records per emp per month
+let advListCache={};
+
+async function loadAdvList(empId,m,y){
+  const {data}=await sb.from('advances').select('*')
+    .eq('emp_id',empId).gte('adv_date',dateStr(y,m,1)).lte('adv_date',dateStr(y,m,getDays(y,m)))
+    .order('created_at');
+  advListCache[empId]=data||[];
+  const total=(data||[]).reduce((s,r)=>s+r.amount,0);
+  advCache[`${empId}|${y}|${m}`]=total;
+}
+
+async function addAdv(empId,m,y){
+  const date=dateStr(y,m,new Date().getDate()<=getDays(y,m)?new Date().getDate():1);
+  await sb.from('advances').insert({emp_id:empId,adv_date:date,amount:0,note:''});
+  await loadAdvList(empId,m,y);
+  renderSal(m,y);
+}
+
+async function updateAdv(empId,idx,amount,m,y){
+  const rec=advListCache[empId][idx];
+  if(!rec) return;
+  await sb.from('advances').update({amount:parseFloat(amount)||0}).eq('id',rec.id);
+  advListCache[empId][idx].amount=parseFloat(amount)||0;
+  advCache[`${empId}|${y}|${m}`]=(advListCache[empId]||[]).reduce((s,r)=>s+r.amount,0);
+  renderSal(m,y);
+}
+
+async function updateAdvNote(empId,idx,note,m,y){
+  const rec=advListCache[empId][idx];
+  if(!rec) return;
+  await sb.from('advances').update({note}).eq('id',rec.id);
+  advListCache[empId][idx].note=note;
+}
+
+async function deleteAdv(empId,idx,m,y){
+  const rec=advListCache[empId][idx];
+  if(!rec) return;
+  await sb.from('advances').delete().eq('id',rec.id);
+  advListCache[empId].splice(idx,1);
+  advCache[`${empId}|${y}|${m}`]=(advListCache[empId]||[]).reduce((s,r)=>s+r.amount,0);
+  renderSal(m,y);
+}
+
+// ── EXCEL EXPORTS ─────────────────────────────────────────────────────────────
+function exportAttExcel(){
+  const m=parseInt(document.getElementById('att-month').value);
+  const y=2026, shift=document.getElementById('att-shift').value;
+  const days=getDays(y,m);
+  const wb=XLSX.utils.book_new();
+  const shiftName=shift==='day'?'Day':'Night';
+
+  const hdr=['Employee','Designation','Machine',...Array.from({length:days},(_,i)=>i+1),'Present','Absent','Holiday','1.5x Days','OT Hrs'];
+  const rows=[hdr];
+  emps.forEach(e=>{
+    let present=0,absent=0,holiday=0,half=0,otH=0;
+    const row=[e.name,e.desig,e.machine];
+    for(let d=1;d<=days;d++){
+      const sat=isSat(y,m,d);
+      const key=`${e.id}|${dateStr(y,m,d)}|${shift}`;
+      const rec=attCache[key];
+      let s=rec?rec.status:(sat?'H':'');
+      row.push(s||'-');
+      if(s==='P')present++;
+      else if(s==='A')absent++;
+      else if(s==='H')holiday++;
+      else if(s==='X')half++;
+      else if(s==='OT'){present++;otH+=parseFloat(rec?.ot_hours||0);}
+    }
+    row.push(present,absent,holiday,half,otH);
+    rows.push(row);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:18},{wch:14},{wch:8},...Array(days).fill({wch:4}),{wch:8},{wch:7},{wch:8},{wch:8},{wch:7}];
+  XLSX.utils.book_append_sheet(wb,ws,`${MONTHS[m].slice(0,3)}-${shiftName}`);
+  XLSX.writeFile(wb,`JaiGuruJi_Attendance_${MONTHS[m]}_${y}_${shiftName}.xlsx`);
+  showToast('Attendance Excel download ho rahi hai!');
+}
+
+function exportSalExcel(){
+  const m=parseInt(document.getElementById('sal-month').value);
+  const y=2026;
+  const wb=XLSX.utils.book_new();
+  const hdr=['Emp ID','Name','Designation','Machine','Present Days','Sat Count','1.5x Days','OT Hours','Base Earning','1.5x Pay','Sat Bonus','OT Amount','Gross','Advance','Net Salary'];
+  const rows=[hdr];
+  let totGross=0,totNet=0;
+  emps.forEach(e=>{
+    const dayS=calcEmpSal(e,m,y,'day');
+    const nightS=calcEmpSal(e,m,y,'night');
+    const present=dayS.present+nightS.present;
+    const sat=dayS.satCount+nightS.satCount;
+    const half=dayS.halfCount+nightS.halfCount;
+    const otH=dayS.otHours+nightS.otHours;
+    const base=dayS.base+nightS.base;
+    const halfPay=dayS.halfPay+nightS.halfPay;
+    const satB=dayS.satBonus+nightS.satBonus;
+    const otA=dayS.otAmt+nightS.otAmt;
+    const gross=dayS.gross+nightS.gross;
+    const adv=advCache[`${e.id}|${y}|${m}`]||0;
+    const net=gross-adv;
+    totGross+=gross;totNet+=net;
+    rows.push([e.id,e.name,e.desig,e.machine,present,sat,half,otH,base,halfPay,satB,otA,gross,adv,net]);
+  });
+  rows.push(['','','','','','','','','','','','','TOTAL','',totNet]);
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:8},{wch:18},{wch:14},{wch:8},{wch:10},{wch:8},{wch:10},{wch:8},{wch:12},{wch:10},{wch:10},{wch:10},{wch:12},{wch:10},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,ws,`Salary ${MONTHS[m].slice(0,3)} ${y}`);
+  XLSX.writeFile(wb,`JaiGuruJi_Salary_${MONTHS[m]}_${y}.xlsx`);
+  showToast('Salary Excel download ho rahi hai!');
+}
+
+// ── SUMMARY ──────────────────────────────────────────────────────────────────
+async function loadSum(){
+  const y=2026;
+  const {data:attData}=await sb.from('attendance').select('*');
+  attCache={};(attData||[]).forEach(r=>{attCache[`${r.emp_id}|${r.att_date}|${r.shift}`]=r;});
+  const {data:advData}=await sb.from('advances').select('*');
+  advCache={};(advData||[]).forEach(r=>{const k=`${r.emp_id}|${new Date(r.adv_date).getFullYear()}|${new Date(r.adv_date).getMonth()}`;advCache[k]=(advCache[k]||0)+r.amount;});
+
+  let grand=0;
+  const mTotals=[];
+  const eTotals={};
+  emps.forEach(e=>eTotals[e.id]=0);
+
+  for(let mo=0;mo<12;mo++){
+    let mt=0;
+    emps.forEach(e=>{
+      const d=calcEmpSal(e,mo,y,'day');
+      const n=calcEmpSal(e,mo,y,'night');
+      const gross=d.gross+n.gross;
+      const adv=advCache[`${e.id}|${y}|${mo}`]||0;
+      const net=gross-adv;
+      eTotals[e.id]=(eTotals[e.id]||0)+net;
+      mt+=net;
+    });
+    mTotals.push(mt);grand+=mt;
+  }
+
+  const curM=new Date().getMonth();
+  document.getElementById('sum-stats').innerHTML=`
+    <div class="stat-box"><div class="stat-val">${fmt(grand)}</div><div class="stat-lbl">Annual Payroll 2026</div></div>
+    <div class="stat-box"><div class="stat-val">${fmt(Math.round(grand/12))}</div><div class="stat-lbl">Monthly Average</div></div>
+    <div class="stat-box"><div class="stat-val">${emps.length}</div><div class="stat-lbl">Total Employees</div></div>
+    <div class="stat-box"><div class="stat-val">${fmt(emps.length?Math.round(grand/12/(emps.length||1)):0)}</div><div class="stat-lbl">Avg/Employee/Month</div></div>`;
+
+  document.getElementById('sum-months').innerHTML=MONTHS.map((mn,i)=>`
+    <div class="mrow ${i===curM?'cur':''}">
+      <span>${mn} ${y}</span>
+      <span style="color:var(--m);font-weight:600">${mTotals[i]>0?fmt(mTotals[i]):'—'}</span>
+    </div>`).join('');
+
+  document.getElementById('sum-emps').innerHTML=emps.length?emps.map(e=>`
+    <div class="mrow">
+      <div><div style="font-weight:600;font-size:12px">${e.name}</div>
+      <div style="font-size:10px;color:#888">${e.desig} · ${e.machine==='1.5x'?'1.5x':'Normal'}</div></div>
+      <span style="color:var(--m);font-weight:600">${fmt(eTotals[e.id]||0)}</span>
+    </div>`).join(''):'<div class="loading">Koi employee nahi.</div>';
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',2500);}
+</script>
+</body>
+</html>
